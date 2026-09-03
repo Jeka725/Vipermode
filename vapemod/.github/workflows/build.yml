@@ -19,7 +19,7 @@ jobs:
           echo "$PWD/bin" >> $GITHUB_PATH
 
       - name: Init arduino-cli config
-        run: arduino-cli config init
+        run: arduino-cli config init --overwrite
 
       - name: Add ESP32 board index
         run: |
@@ -31,19 +31,19 @@ jobs:
       - name: Install ESP32 core
         run: arduino-cli core install esp32:esp32
 
+      - name: Update library index
+        run: arduino-cli lib update-index
+
       - name: Install libraries
         run: |
-          arduino-cli lib install "Adafruit SSD1306"
+          set -e
           arduino-cli lib install "Adafruit GFX Library"
+          arduino-cli lib install "Adafruit SSD1306"
+
+      - name: Verify installed libraries
+        run: arduino-cli lib list
 
       - name: Compile sketch
-        run: |
-          arduino-cli compile \
-            --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc \
-            --output-dir ./build \
-            ./vapemod
-
-      - name: Merge binary
         run: |
           arduino-cli compile \
             --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc \
