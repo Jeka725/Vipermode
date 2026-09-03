@@ -1,4 +1,4 @@
-name: Build ESP32-C3 Firmware
+name: Build Vapemod Firmware
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install arduino-cli
@@ -18,28 +18,43 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
           echo "$PWD/bin" >> $GITHUB_PATH
 
-      - name: Configure arduino-cli
+      - name: Init arduino-cli config
+        run: arduino-cli config init --overwrite
+
+      - name: Add ESP32 board index
         run: |
-          arduino-cli config init
           arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-          arduino-cli core update-index
-          arduino-cli core install esp32:esp32
+
+      - name: Update core index
+        run: arduino-cli core update-index
+
+      - name: Install ESP32 core
+        run: arduino-cli core install esp32:esp32
+
+      - name: Update library index
+        run: arduino-cli lib update-index
 
       - name: Install libraries
         run: |
-          arduino-cli lib install "U8g2"
+          set -e
+          arduino-cli lib install "Adafruit GFX Library"
+          arduino-cli lib install "Adafruit SSD1306"
+
+      - name: Verify installed libraries
+        run: arduino-cli lib list
 
       - name: Compile sketch
         run: |
           arduino-cli compile \
-            --fqbn esp32:esp32:esp32c3 \
+            --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc \
             --output-dir ./build \
+            --export-binaries \
             ./vapemod
 
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: firmware
+          name: vapemod-firmware
           path: |
-            build/*.bin
-            build/*.elf
+            ./build/*.bin
+            ./build/*.merged.bin
